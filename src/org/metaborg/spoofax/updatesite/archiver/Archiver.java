@@ -42,8 +42,8 @@ public class Archiver {
 		PROJECT_NAME = args[0];
 		JOBSET_NAME = args[1];
 		JOB_NAME = args[2];
-		REPOSITORY = args[4];
-		REPOSITORY_PUBLISH_LINK = args[5];
+		REPOSITORY = args[3];
+		REPOSITORY_PUBLISH_LINK = args[4];
 		
 		BUILD_LINK = "http://hydra.nixos.org/job/" + PROJECT_NAME + "/" + JOBSET_NAME + "/" + JOB_NAME + "/" + BUILD_ID;
 		
