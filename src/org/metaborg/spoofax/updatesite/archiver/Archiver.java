@@ -220,6 +220,7 @@ public class Archiver {
 			}
 			bos.flush();
 			bis.close();
+			bos.close();
 			return destination;
 		} catch (IOException e) {
 			System.err.println("Failed to download file from " + stringUrl);
