@@ -7,12 +7,15 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
 
 import org.json.JSONObject;
@@ -20,33 +23,34 @@ import org.json.JSONObject;
 public class Archiver {
 
 	public static long POLL_FREQ = 60000;
-	
+
 	public static String PROJECT_NAME; // = "spoofax";
 	public static String JOBSET_NAME; // = "spoofax-master";
 	public static String JOB_NAME; // = "build";
 	public static String BUILD_ID = "latest";
-	
-	public static String REPOSITORY; // = "/tmp/updatesites";
-	public static String REPOSITORY_PUBLISH_LINK; // = "http://www.foobar.org/archiver/";
 
-	
-	public static String BUILD_LINK; // = "http://hydra.nixos.org/job/" + PROJECT_NAME + "/" + JOBSET_NAME + "/" + JOB_NAME + "/" + BUILD_ID;
+	public static String REPOSITORY; // = "/tmp/updatesites";
+	public static String REPOSITORY_PUBLISH_LINK; // =
+													// "http://www.foobar.org/archiver/";
+
+	public static String BUILD_LINK; // = "http://hydra.nixos.org/job/" +
+										// PROJECT_NAME + "/" + JOBSET_NAME +
+										// "/" + JOB_NAME + "/" + BUILD_ID;
 	public static String DOWNLOAD_LINK_PREFIX = "http://hydra.nixos.org/build/";
 	public static String DOWNLOAD_LINK_SUFFIX = "/download/2/";
 
-
-
 	public static String REPOSITORY_INDEX; // = REPOSITORY + "/index.html";
-	
+
 	public static void main(String[] args) {
 		PROJECT_NAME = args[0];
 		JOBSET_NAME = args[1];
 		JOB_NAME = args[2];
 		REPOSITORY = args[3];
 		REPOSITORY_PUBLISH_LINK = args[4];
-		
-		BUILD_LINK = "http://hydra.nixos.org/job/" + PROJECT_NAME + "/" + JOBSET_NAME + "/" + JOB_NAME + "/" + BUILD_ID;
-		
+
+		BUILD_LINK = "http://hydra.nixos.org/job/" + PROJECT_NAME + "/"
+				+ JOBSET_NAME + "/" + JOB_NAME + "/" + BUILD_ID;
+
 		REPOSITORY_INDEX = REPOSITORY + "/index.html";
 		do {
 			doUpdate();
@@ -110,12 +114,23 @@ public class Archiver {
 			System.out.println("Payload downloaded");
 
 			System.out.println("Extracting payload");
+
 			Process extractor = new ProcessBuilder("tar", "-zxf",
 					tarDestination.getAbsolutePath(), "-C",
 					buildDir.getAbsolutePath()).start();
+
 			int extractionResult = extractor.waitFor();
+			BufferedReader extractorErrRd = new BufferedReader(
+					new InputStreamReader(extractor.getErrorStream()));
+
+			String extractorL;
+			while ((extractorL = extractorErrRd.readLine()) != null) {
+				System.err.println(extractorL);
+			}
+
 			if (extractionResult != 0) {
 				System.err.println("Extraction failed");
+				return;
 			} else {
 				System.out.println("Extraction successful");
 			}
@@ -145,6 +160,14 @@ public class Archiver {
 		final String htmlSuffix = "</table></body></html>";
 		StringBuilder sb = new StringBuilder(htmlPrefix);
 		File[] files = new File(REPOSITORY).listFiles();
+		Arrays.sort(files, new Comparator<File>() {
+
+			@Override
+			public int compare(File o1, File o2) {
+				return (int) (o2.lastModified() - o1.lastModified());
+			}
+		});
+
 		for (File f : files) {
 			if (f.isDirectory()) {
 				File versionDir = null;
